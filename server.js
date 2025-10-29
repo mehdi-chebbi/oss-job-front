@@ -1,3 +1,4 @@
+
 const express = require('express');
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcrypt');
@@ -16,6 +17,7 @@ const app = express();
 
 const allowedOrigins = [
   'http://10.1.10.182',
+  'http://192.168.2.136',
   'http://localhost:5173',
   'http://127.0.0.1:5173',
   'http://127.0.0.1:3000'
@@ -40,7 +42,7 @@ app.use(express.json());
 // Microsoft Graph API Configuration
 const OUTLOOK_CONFIG = {
     clientId: process.env.OUTLOOK_CLIENT_ID || '',
-    clientSecret: process.env.OUTLOOK_CLIENT_SECRET || '', 
+    clientSecret: process.env.OUTLOOK_CLIENT_SECRET || '',
     tenantId: process.env.OUTLOOK_TENANT_ID || '',
     userEmail: process.env.OUTLOOK_USER_EMAIL || ''
 };
@@ -61,7 +63,7 @@ async function getAccessToken() {
     const clientCredentialRequest = {
         scopes: ['https://graph.microsoft.com/.default'],
     };
-    
+
     try {
         const response = await cca.acquireTokenByClientCredential(clientCredentialRequest);
         return response.accessToken;
@@ -75,7 +77,7 @@ async function getAccessToken() {
 async function sendEmailWithGraphAPI(to, subject, htmlContent, textContent = null) {
     try {
         const accessToken = await getAccessToken();
-        
+
         const emailData = {
             message: {
                 subject: subject,
@@ -98,7 +100,7 @@ async function sendEmailWithGraphAPI(to, subject, htmlContent, textContent = nul
                 ]
             }
         };
-        
+
         const response = await axios.post(
             `https://graph.microsoft.com/v1.0/users/${OUTLOOK_CONFIG.userEmail}/sendMail`,
             emailData,
@@ -109,10 +111,10 @@ async function sendEmailWithGraphAPI(to, subject, htmlContent, textContent = nul
                 }
             }
         );
-        
+
         console.log(`Email sent successfully to ${to}`);
         return response.data;
-        
+
     } catch (error) {
         console.error('Error sending email via Graph API:', error.message);
         if (error.response) {
@@ -123,31 +125,31 @@ async function sendEmailWithGraphAPI(to, subject, htmlContent, textContent = nul
     }
 }
 
-// Create email templates
+// Create email templates (unchanged)
 function createHRNotificationEmail(hrName, offerTitle, applicantName, applicantEmail) {
     return `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
                 <h2 style="color: #343a40; margin: 0;">New Application Received</h2>
             </div>
-            
+
             <div style="padding: 20px; background-color: #ffffff; border: 1px solid #dee2e6; border-radius: 8px;">
                 <p style="color: #495057; font-size: 16px;">Hello <strong>${hrName}</strong>,</p>
-                
+
                 <p style="color: #495057; font-size: 14px;">
                     You have received a new application for your job offer:
                 </p>
-                
+
                 <div style="background-color: #e9ecef; padding: 15px; border-radius: 5px; margin: 20px 0;">
                     <p style="margin: 5px 0;"><strong>Offer:</strong> ${offerTitle}</p>
                     <p style="margin: 5px 0;"><strong>Applicant:</strong> ${applicantName}</p>
                     <p style="margin: 5px 0;"><strong>Email:</strong> ${applicantEmail}</p>
                 </div>
-                
+
                 <p style="color: #495057; font-size: 14px;">
                     Please log into the HR portal to review the application and download the submitted documents.
                 </p>
-                
+
                 <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6;">
                     <p style="color: #6c757d; font-size: 12px; margin: 0;">
                         This is an automated notification from the HR Job Portal
@@ -164,24 +166,24 @@ function createApplicantConfirmationEmail(applicantName, offerTitle) {
             <div style="background-color: #d4edda; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
                 <h2 style="color: #155724; margin: 0;">Application Submitted Successfully</h2>
             </div>
-            
+
             <div style="padding: 20px; background-color: #ffffff; border: 1px solid #dee2e6; border-radius: 8px;">
                 <p style="color: #495057; font-size: 16px;">Dear <strong>${applicantName}</strong>,</p>
-                
+
                 <p style="color: #495057; font-size: 14px;">
                     Thank you for your application! We have successfully received your submission for:
                 </p>
-                
+
                 <div style="background-color: #e9ecef; padding: 15px; border-radius: 5px; margin: 20px 0;">
                     <p style="margin: 5px 0;"><strong>Position:</strong> ${offerTitle}</p>
                     <p style="margin: 5px 0;"><strong>Submitted:</strong> ${new Date().toLocaleDateString()}</p>
                 </div>
-                
+
                 <p style="color: #495057; font-size: 14px;">
-                    Our HR team will review your application and contact you if your profile matches our requirements. 
+                    Our HR team will review your application and contact you if your profile matches our requirements.
                     This process may take some time, so please be patient.
                 </p>
-                
+
                 <p style="color: #495057; font-size: 14px;">
                     <strong>Next Steps:</strong>
                 </p>
@@ -190,7 +192,7 @@ function createApplicantConfirmationEmail(applicantName, offerTitle) {
                     <li>We will contact you if you are selected for the next stage</li>
                     <li>Please keep your contact information up to date</li>
                 </ul>
-                
+
                 <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6;">
                     <p style="color: #6c757d; font-size: 12px; margin: 0;">
                         Best regards,<br>
@@ -209,20 +211,20 @@ function createExpirationNotificationEmail(recipientName, offerTitle, deadline) 
             <div style="background-color: #f8d7da; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
                 <h2 style="color: #721c24; margin: 0;">Offer Expired</h2>
             </div>
-            
+
             <div style="padding: 20px; background-color: #ffffff; border: 1px solid #dee2e6; border-radius: 8px;">
                 <p style="color: #495057; font-size: 16px;">Hello <strong>${recipientName}</strong>,</p>
-                
+
                 <p style="color: #495057; font-size: 14px;">
                     Your job offer has reached its deadline and has now expired:
                 </p>
-                
+
                 <div style="background-color: #f8d7da; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #dc3545;">
                     <p style="margin: 5px 0;"><strong>Offer:</strong> ${offerTitle}</p>
                     <p style="margin: 5px 0;"><strong>Deadline:</strong> ${deadline}</p>
                     <p style="margin: 5px 0;"><strong>Status:</strong> Expired</p>
                 </div>
-                
+
                 <p style="color: #495057; font-size: 14px;">
                     <strong>Recommended Actions:</strong>
                 </p>
@@ -232,11 +234,11 @@ function createExpirationNotificationEmail(recipientName, offerTitle, deadline) 
                     <li>Extend the deadline if you need more time</li>
                     <li>Create a new offer if needed</li>
                 </ul>
-                
+
                 <p style="color: #495057; font-size: 14px;">
                     Please log into the HR portal to take the necessary actions.
                 </p>
-                
+
                 <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6;">
                     <p style="color: #6c757d; font-size: 12px; margin: 0;">
                         This is an automated notification from the HR Job Portal
@@ -252,26 +254,26 @@ function createUpcomingExpirationNotificationEmail(recipientName, offerTitle, de
     const urgencyTextColor = daysUntilExpiration === 1 ? '#721c24' : '#856404';
     const urgencyBorder = daysUntilExpiration === 1 ? '#dc3545' : '#ffc107';
     const urgencyTitle = daysUntilExpiration === 1 ? 'Offer Expiring Tomorrow' : 'Offer Expiring in 2 Days';
-    
+
     return `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <div style="background-color: ${urgencyColor}; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
                 <h2 style="color: ${urgencyTextColor}; margin: 0;">${urgencyTitle}</h2>
             </div>
-            
+
             <div style="padding: 20px; background-color: #ffffff; border: 1px solid #dee2e6; border-radius: 8px;">
                 <p style="color: #495057; font-size: 16px;">Hello <strong>${recipientName}</strong>,</p>
-                
+
                 <p style="color: #495057; font-size: 14px;">
                     Your job offer is approaching its deadline:
                 </p>
-                
+
                 <div style="background-color: ${urgencyColor}; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid ${urgencyBorder};">
                     <p style="margin: 5px 0;"><strong>Offer:</strong> ${offerTitle}</p>
                     <p style="margin: 5px 0;"><strong>Deadline:</strong> ${deadline}</p>
                     <p style="margin: 5px 0;"><strong>Time Remaining:</strong> ${daysUntilExpiration} day${daysUntilExpiration > 1 ? 's' : ''}</p>
                 </div>
-                
+
                 <p style="color: #495057; font-size: 14px;">
                     <strong>Recommended Actions:</strong>
                 </p>
@@ -281,11 +283,11 @@ function createUpcomingExpirationNotificationEmail(recipientName, offerTitle, de
                     <li>Prepare for application processing when the offer expires</li>
                     <li>Note that you'll have ${daysUntilExpiration === 1 ? '1 day' : '2 days'} after expiration to archive applications</li>
                 </ul>
-                
+
                 <p style="color: #495057; font-size: 14px;">
                     Please log into the HR portal to manage your offer and applications.
                 </p>
-                
+
                 <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6;">
                     <p style="color: #6c757d; font-size: 12px; margin: 0;">
                         This is an automated notification from the HR Job Portal
@@ -362,10 +364,22 @@ let pool;
 // ───── Initialize DB ─────
 (async () => {
   try {
+    console.log('Attempting to connect to MySQL...');
     const connection = await mysql.createConnection(DB_CONFIG);
+    console.log('Connected to MySQL successfully');
+
+    console.log('Creating database if not exists...');
     await connection.query(`CREATE DATABASE IF NOT EXISTS rh_app`);
+    console.log('Database creation query executed');
+
     await connection.end();
+    console.log('Disconnected from initial connection');
+
+    console.log('Creating connection pool with rh_app database...');
     pool = mysql.createPool({ ...DB_CONFIG, database: 'rh_app' });
+    console.log('Connection pool created');
+
+    console.log('Creating tables...');
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -376,6 +390,8 @@ let pool;
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
+    console.log('Users table created');
+
     await pool.query(`
       CREATE TABLE IF NOT EXISTS departments (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -387,6 +403,8 @@ let pool;
         UNIQUE KEY (name, created_by)
       )
     `);
+    console.log('Departments table created');
+
     await pool.query(`
       CREATE TABLE IF NOT EXISTS projects (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -400,6 +418,8 @@ let pool;
         UNIQUE KEY (name, department_id, created_by)
       )
     `);
+    console.log('Projects table created');
+
     await pool.query(`
       CREATE TABLE IF NOT EXISTS offers (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -417,28 +437,46 @@ let pool;
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         tdr_filename VARCHAR(255) NULL,
         tdr_filepath VARCHAR(255) NULL,
-        notification_emails JSON,
+        notification_emails TEXT,
         FOREIGN KEY (project_id) REFERENCES projects(id),
         FOREIGN KEY (created_by) REFERENCES users(id)
       )
     `);
-    
-    // Add notification columns to existing offers table if they don't exist
+    console.log('Offers table created');
+
+    // FIXED: Check if columns exist before adding them
     try {
-      await pool.query(`
-        ALTER TABLE offers 
-        ADD COLUMN IF NOT EXISTS two_day_notified BOOLEAN DEFAULT FALSE AFTER deadline,
-        ADD COLUMN IF NOT EXISTS one_day_notified BOOLEAN DEFAULT FALSE AFTER two_day_notified
-      `);
+      console.log('Checking if notification columns exist in offers table...');
+      const [columns] = await pool.query(`SHOW COLUMNS FROM offers LIKE 'two_day_notified'`);
+
+      if (columns.length === 0) {
+        console.log('Adding two_day_notified column...');
+        await pool.query(`ALTER TABLE offers ADD COLUMN two_day_notified BOOLEAN DEFAULT FALSE AFTER deadline`);
+        console.log('two_day_notified column added');
+      }
+
+      const [columns2] = await pool.query(`SHOW COLUMNS FROM offers LIKE 'one_day_notified'`);
+
+      if (columns2.length === 0) {
+        console.log('Adding one_day_notified column...');
+        await pool.query(`ALTER TABLE offers ADD COLUMN one_day_notified BOOLEAN DEFAULT FALSE AFTER two_day_notified`);
+        console.log('one_day_notified column added');
+      }
     } catch (err) {
-      // Columns might already exist, ignore error
-      console.log('Notification columns may already exist:', err.message);
+      console.error('Error adding notification columns:', err.message);
     }
-    
-    // Update existing appel_d_offre records to appel_d_offre_service
-    await pool.query(`
-      UPDATE offers SET type = 'appel_d_offre_service' WHERE type = 'appel_d_offre'
-    `);
+
+    // FIXED: Use separate UPDATE statement for changing enum values
+    try {
+      console.log('Updating appel_d_offre to appel_d_offre_service...');
+      await pool.query(`
+        UPDATE offers SET type = 'appel_d_offre_service' WHERE type = 'appel_d_offre'
+      `);
+      console.log('Enum values updated');
+    } catch (err) {
+      console.error('Error updating enum values:', err.message);
+    }
+
     await pool.query(`
       CREATE TABLE IF NOT EXISTS applications (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -473,18 +511,22 @@ let pool;
         UNIQUE KEY (offer_id, email)
       )
     `);
-    
-    // Add archived_at column to existing applications table if it doesn't exist
+    console.log('Applications table created');
+
+    // FIXED: Check if archived_at column exists before adding it
     try {
-      await pool.query(`
-        ALTER TABLE applications 
-        ADD COLUMN IF NOT EXISTS archived_at TIMESTAMP NULL
-      `);
+      console.log('Checking if archived_at column exists in applications table...');
+      const [columns] = await pool.query(`SHOW COLUMNS FROM applications LIKE 'archived_at'`);
+
+      if (columns.length === 0) {
+        console.log('Adding archived_at column...');
+        await pool.query(`ALTER TABLE applications ADD COLUMN archived_at TIMESTAMP NULL`);
+        console.log('archived_at column added');
+      }
     } catch (err) {
-      // Column might already exist, ignore error
-      console.log('archived_at column may already exist:', err.message);
+      console.error('Error adding archived_at column:', err.message);
     }
-    
+
     await pool.query(`
       CREATE TABLE IF NOT EXISTS logs (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -492,10 +534,13 @@ let pool;
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
-    console.log('Database and tables initialized.');
+    console.log('Logs table created');
+
+    console.log('Database and tables initialized successfully.');
 
     // Schedule daily check for expired offers at midnight
     cron.schedule('0 0 * * *', checkExpiredOffers);
+    console.log('Scheduled cron job for checking expired offers');
   } catch (err) {
     console.error('DB Init Error:', err);
   }
@@ -612,10 +657,10 @@ app.get('/logs', auth, requireRole('admin'), async (req, res) => {
 app.get('/departments', auth, requireRole('comite_ajout'), async (req, res) => {
   try {
     const [departments] = await pool.query(`
-      SELECT d.*, u.name as created_by_name 
-      FROM departments d 
-      LEFT JOIN users u ON d.created_by = u.id 
-      WHERE d.created_by = ? 
+      SELECT d.*, u.name as created_by_name
+      FROM departments d
+      LEFT JOIN users u ON d.created_by = u.id
+      WHERE d.created_by = ?
       ORDER BY d.name ASC
     `, [req.user.id]);
     res.json(departments);
@@ -628,7 +673,7 @@ app.get('/departments', auth, requireRole('comite_ajout'), async (req, res) => {
 app.post('/departments', auth, requireRole('comite_ajout'), async (req, res) => {
   const { name } = req.body;
   if (!name) return res.status(400).json({ error: 'Department name is required' });
-  
+
   try {
     const [result] = await pool.query(
       'INSERT INTO departments (name, description, created_by) VALUES (?, ?, ?)',
@@ -648,16 +693,16 @@ app.post('/departments', auth, requireRole('comite_ajout'), async (req, res) => 
 app.put('/departments/:id', auth, requireRole('comite_ajout'), async (req, res) => {
   const { name } = req.body;
   const { id } = req.params;
-  
+
   if (!name) return res.status(400).json({ error: 'Department name is required' });
-  
+
   try {
     // Verify department belongs to user
     const [deptCheck] = await pool.query('SELECT created_by FROM departments WHERE id = ?', [id]);
     if (deptCheck.length === 0 || deptCheck[0].created_by !== req.user.id) {
       return res.status(403).json({ error: 'Department not found or access denied' });
     }
-    
+
     await pool.query('UPDATE departments SET name = ? WHERE id = ?', [name, id]);
     logAction(`${req.user.name} (${req.user.email}) updated department "${name}"`);
     res.json({ message: 'Department updated' });
@@ -677,12 +722,12 @@ app.delete('/departments/:id', auth, requireRole('comite_ajout'), async (req, re
     if (deptCheck.length === 0 || deptCheck[0].created_by !== req.user.id) {
       return res.status(403).json({ error: 'Department not found or access denied' });
     }
-    
+
     const [projectCheck] = await pool.query('SELECT COUNT(*) as count FROM projects WHERE department_id = ?', [req.params.id]);
     if (projectCheck[0].count > 0) {
       return res.status(400).json({ error: 'Cannot delete department with existing projects' });
     }
-    
+
     await pool.query('DELETE FROM departments WHERE id = ?', [req.params.id]);
     logAction(`${req.user.name} (${req.user.email}) deleted department id ${req.params.id}`);
     res.json({ message: 'Department deleted' });
@@ -696,11 +741,11 @@ app.delete('/departments/:id', auth, requireRole('comite_ajout'), async (req, re
 app.get('/projects', auth, requireRole('comite_ajout'), async (req, res) => {
   try {
     const [projects] = await pool.query(`
-      SELECT p.*, d.name as department_name, u.name as created_by_name 
-      FROM projects p 
-      LEFT JOIN departments d ON p.department_id = d.id 
-      LEFT JOIN users u ON p.created_by = u.id 
-      WHERE p.created_by = ? 
+      SELECT p.*, d.name as department_name, u.name as created_by_name
+      FROM projects p
+      LEFT JOIN departments d ON p.department_id = d.id
+      LEFT JOIN users u ON p.created_by = u.id
+      WHERE p.created_by = ?
       ORDER BY d.name ASC, p.name ASC
     `, [req.user.id]);
     res.json(projects);
@@ -713,18 +758,18 @@ app.get('/projects', auth, requireRole('comite_ajout'), async (req, res) => {
 app.get('/projects/department/:departmentId', auth, requireRole('comite_ajout'), async (req, res) => {
   try {
     const { departmentId } = req.params;
-    
+
     // Verify department belongs to user
     const [deptCheck] = await pool.query('SELECT created_by FROM departments WHERE id = ?', [departmentId]);
     if (deptCheck.length === 0 || deptCheck[0].created_by !== req.user.id) {
       return res.status(403).json({ error: 'Department not found or access denied' });
     }
-    
+
     const [projects] = await pool.query(`
-      SELECT p.*, d.name as department_name 
-      FROM projects p 
-      LEFT JOIN departments d ON p.department_id = d.id 
-      WHERE p.department_id = ? AND p.created_by = ? 
+      SELECT p.*, d.name as department_name
+      FROM projects p
+      LEFT JOIN departments d ON p.department_id = d.id
+      WHERE p.department_id = ? AND p.created_by = ?
       ORDER BY p.name ASC
     `, [departmentId, req.user.id]);
     res.json(projects);
@@ -737,14 +782,14 @@ app.get('/projects/department/:departmentId', auth, requireRole('comite_ajout'),
 app.post('/projects', auth, requireRole('comite_ajout'), async (req, res) => {
   const { name, department_id } = req.body;
   if (!name || !department_id) return res.status(400).json({ error: 'Project name and department are required' });
-  
+
   try {
     // Verify department belongs to user
     const [deptCheck] = await pool.query('SELECT created_by FROM departments WHERE id = ?', [department_id]);
     if (deptCheck.length === 0 || deptCheck[0].created_by !== req.user.id) {
       return res.status(403).json({ error: 'Department not found or access denied' });
     }
-    
+
     const [result] = await pool.query(
       'INSERT INTO projects (name, description, department_id, created_by) VALUES (?, ?, ?, ?)',
       [name, '', department_id, req.user.id]
@@ -763,28 +808,28 @@ app.post('/projects', auth, requireRole('comite_ajout'), async (req, res) => {
 app.put('/projects/:id', auth, requireRole('comite_ajout'), async (req, res) => {
   const { name, department_id } = req.body;
   const { id } = req.params;
-  
+
   if (!name || !department_id) return res.status(400).json({ error: 'Project name and department are required' });
-  
+
   try {
     // Verify project belongs to user and department belongs to user
     const [projectCheck] = await pool.query(`
-      SELECT p.created_by, d.created_by as dept_created_by 
-      FROM projects p 
-      LEFT JOIN departments d ON p.department_id = d.id 
+      SELECT p.created_by, d.created_by as dept_created_by
+      FROM projects p
+      LEFT JOIN departments d ON p.department_id = d.id
       WHERE p.id = ?
     `, [id]);
-    
+
     if (projectCheck.length === 0 || projectCheck[0].created_by !== req.user.id) {
       return res.status(403).json({ error: 'Project not found or access denied' });
     }
-    
+
     const [deptCheck] = await pool.query('SELECT created_by FROM departments WHERE id = ?', [department_id]);
     if (deptCheck.length === 0 || deptCheck[0].created_by !== req.user.id) {
       return res.status(403).json({ error: 'Department not found or access denied' });
     }
-    
-    await pool.query('UPDATE projects SET name = ?, department_id = ? WHERE id = ?', 
+
+    await pool.query('UPDATE projects SET name = ?, department_id = ? WHERE id = ?',
       [name, department_id, id]);
     logAction(`${req.user.name} (${req.user.email}) updated project "${name}"`);
     res.json({ message: 'Project updated' });
@@ -804,12 +849,12 @@ app.delete('/projects/:id', auth, requireRole('comite_ajout'), async (req, res) 
     if (projectCheck.length === 0 || projectCheck[0].created_by !== req.user.id) {
       return res.status(403).json({ error: 'Project not found or access denied' });
     }
-    
+
     const [offerCheck] = await pool.query('SELECT COUNT(*) as count FROM offers WHERE project_id = ?', [req.params.id]);
     if (offerCheck[0].count > 0) {
       return res.status(400).json({ error: 'Cannot delete project with existing offers' });
     }
-    
+
     await pool.query('DELETE FROM projects WHERE id = ?', [req.params.id]);
     logAction(`${req.user.name} (${req.user.email}) deleted project id ${req.params.id}`);
     res.json({ message: 'Project deleted' });
@@ -824,8 +869,8 @@ app.delete('/projects/:id', auth, requireRole('comite_ajout'), async (req, res) 
 app.get('/offers', async (req, res) => {
   try {
     const [offers] = await pool.query(`
-      SELECT o.id, o.type, o.title, o.description, o.country, 
-             p.name as project_name, d.name as department_name, 
+      SELECT o.id, o.type, o.title, o.description, o.country,
+             p.name as project_name, d.name as department_name,
              o.reference, o.deadline, o.created_at, o.tdr_filename, o.tdr_filepath
       FROM offers o
       LEFT JOIN projects p ON o.project_id = p.id
@@ -847,9 +892,9 @@ app.get('/offers', async (req, res) => {
 app.get('/offers/:id', async (req, res) => {
   try {
     const [rows] = await pool.query(`
-      SELECT o.id, o.type, o.title, o.description, o.country, 
-             p.name as project_name, d.name as department_name, 
-             o.reference, o.deadline, o.created_at, o.tdr_filename, o.tdr_filepath, 
+      SELECT o.id, o.type, o.title, o.description, o.country,
+             p.name as project_name, d.name as department_name,
+             o.reference, o.deadline, o.created_at, o.tdr_filename, o.tdr_filepath,
              o.notification_emails, o.project_id
       FROM offers o
       LEFT JOIN projects p ON o.project_id = p.id
@@ -878,11 +923,11 @@ app.post('/offers', auth, requireRole('comite_ajout'), uploadTdr.single('tdr'), 
   try {
     const { type, title, description, country, project_id, reference, deadline, notification_emails } = req.body;
     const tdrFile = req.file;
-    
+
     if (!type || !title || !country || !project_id || !reference || !deadline) {
       return res.status(400).json({ error: 'Missing fields' });
     }
-    
+
     if (tdrFile && tdrFile.mimetype !== 'application/pdf') {
       return res.status(400).json({ error: 'TDR must be a PDF file' });
     }
@@ -895,7 +940,7 @@ app.post('/offers', auth, requireRole('comite_ajout'), uploadTdr.single('tdr'), 
 
     const tdrFilename = tdrFile ? tdrFile.filename : null;
     const tdrFilepath = tdrFile ? tdrFile.path : null;
-    
+
     // Parse notification emails
     let emails = [];
     if (notification_emails) {
@@ -915,18 +960,18 @@ app.post('/offers', auth, requireRole('comite_ajout'), uploadTdr.single('tdr'), 
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [type, title, description, country, project_id, reference, deadline, req.user.id, tdrFilename, tdrFilepath, JSON.stringify(emails)]
     );
-    
+
     // Get the complete offer data to return to frontend
     const [newOffer] = await pool.query(
-      `SELECT o.*, p.name as project_name, d.name as department_name, u.name as created_by_name, u.email as created_by_email 
-       FROM offers o 
+      `SELECT o.*, p.name as project_name, d.name as department_name, u.name as created_by_name, u.email as created_by_email
+       FROM offers o
        LEFT JOIN projects p ON o.project_id = p.id
        LEFT JOIN departments d ON p.department_id = d.id
-       LEFT JOIN users u ON o.created_by = u.id 
+       LEFT JOIN users u ON o.created_by = u.id
        WHERE o.id = ?`,
       [result.insertId]
     );
-    
+
     logOfferAction(req.user, 'created', title);
     res.json(newOffer[0]);
   } catch (err) {
@@ -940,7 +985,7 @@ app.put('/offers/:id', auth, requireRole('comite_ajout'), uploadTdr.single('tdr'
     const { type, title, description, country, project_id, reference, deadline, notification_emails } = req.body;
     const tdrFile = req.file;
     const { id } = req.params;
-    
+
     if (tdrFile && tdrFile.mimetype !== 'application/pdf') {
       return res.status(400).json({ error: 'TDR must be a PDF file' });
     }
@@ -969,7 +1014,7 @@ app.put('/offers/:id', auth, requireRole('comite_ajout'), uploadTdr.single('tdr'
         fs.unlinkSync(oldTdrInfo.tdr_filepath);
       }
     }
-    
+
     // Parse notification emails
     let emails = [];
     if (notification_emails) {
@@ -991,11 +1036,11 @@ app.put('/offers/:id', auth, requireRole('comite_ajout'), uploadTdr.single('tdr'
 
     // Get the updated offer data to return to frontend
     const [updatedOffer] = await pool.query(
-      `SELECT o.*, p.name as project_name, d.name as department_name, u.name as created_by_name, u.email as created_by_email 
-       FROM offers o 
+      `SELECT o.*, p.name as project_name, d.name as department_name, u.name as created_by_name, u.email as created_by_email
+       FROM offers o
        LEFT JOIN projects p ON o.project_id = p.id
        LEFT JOIN departments d ON p.department_id = d.id
-       LEFT JOIN users u ON o.created_by = u.id 
+       LEFT JOIN users u ON o.created_by = u.id
        WHERE o.id = ?`,
       [id]
     );
@@ -1184,7 +1229,7 @@ app.post('/apply', uploadApplicant.fields([
       console.warn('HR user not found for offer:', offer_id);
     } else {
       const hrUser = hrRows[0];
-      
+
       try {
         // Send email only to applicant
         await sendEmailWithGraphAPI(
@@ -1192,14 +1237,14 @@ app.post('/apply', uploadApplicant.fields([
           `Application Confirmation: ${offer.title}`,
           createApplicantConfirmationEmail(full_name, offer.title)
         );
-        
+
         console.log('Application confirmation email sent successfully to applicant');
       } catch (emailError) {
         console.error('Error sending application confirmation email:', emailError.message);
         // Application was still saved successfully, just email failed
       }
     }
-    
+
     res.json({ id: result.insertId });
   } catch (err) {
     console.error(err);
@@ -1214,14 +1259,14 @@ app.get('/applications', auth, requireRole(['comite_ajout', 'comite_ouverture'])
     // For comite_ouverture, show all applications. For comite_ajout, show only applications from user's offers.
     const whereClause = req.user.role === 'comite_ouverture' ? '' : 'WHERE o.created_by = ?';
     const params = req.user.role === 'comite_ouverture' ? [] : [req.user.id];
-    
+
     const [applications] = await pool.query(`
       SELECT
         a.id,
         a.offer_id,
         o.title AS offer_title,
         o.type AS offer_type,
-        o.department AS offer_department,
+        d.name AS offer_department,
         a.full_name,
         a.email,
         a.tel_number,
@@ -1236,8 +1281,10 @@ app.get('/applications', auth, requireRole(['comite_ajout', 'comite_ouverture'])
         a.extrait_registre_filename, a.extrait_registre_filepath,
         a.note_methodologique_filename, a.note_methodologique_filepath,
         a.liste_references_filename, a.liste_references_filepath,
+        a.offre_financiere_filename, a.offre_financiere_filepath
       FROM applications a
       JOIN offers o ON a.offer_id = o.id
+      LEFT JOIN departments d ON o.department_id = d.id
       ${whereClause}
       ORDER BY a.created_at DESC
     `, params);
@@ -1270,9 +1317,9 @@ app.get('/applications/summary', auth, requireRole(['comite_ajout', 'comite_ouve
     // For comite_ouverture, show all offers. For comite_ajout, show only user's offers.
     const whereClause = req.user.role === 'comite_ouverture' ? '' : 'WHERE o.created_by = ?';
     const params = req.user.role === 'comite_ouverture' ? [] : [req.user.id];
-    
+
     const [summary] = await pool.query(`
-      SELECT 
+      SELECT
         o.id as offer_id,
         o.title as offer_title,
         o.type as offer_type,
@@ -1280,13 +1327,13 @@ app.get('/applications/summary', auth, requireRole(['comite_ajout', 'comite_ouve
         p.name as offer_project,
         o.deadline,
         COUNT(a.id) as application_count,
-        CASE 
+        CASE
           WHEN o.deadline < CURDATE() THEN 'expired'
           ELSE 'active'
         END as offer_status,
-        CASE 
-          WHEN o.deadline < CURDATE() THEN 
-            CASE 
+        CASE
+          WHEN o.deadline < CURDATE() THEN
+            CASE
               WHEN DATEDIFF(CURDATE(), o.deadline) <= 14 THEN 'archive_window_open'
               ELSE 'archive_window_closed'
             END
@@ -1313,53 +1360,52 @@ app.get('/applications/summary', auth, requireRole(['comite_ajout', 'comite_ouve
 app.post('/applications/archive/:offerId', auth, requireRole(['comite_ajout', 'comite_ouverture']), async (req, res) => {
   try {
     const { offerId } = req.params;
-    
+
     // For comite_ouverture, verify the offer exists and is expired (any offer)
     // For comite_ajout, verify the offer belongs to the user and is expired
-    const whereClause = req.user.role === 'comite_ouverture' 
+    const whereClause = req.user.role === 'comite_ouverture'
       ? 'WHERE id = ? AND deadline < CURDATE()'
       : 'WHERE id = ? AND created_by = ? AND deadline < CURDATE()';
-    const params = req.user.role === 'comite_ouverture' 
+    const params = req.user.role === 'comite_ouverture'
       ? [offerId]
       : [offerId, req.user.id];
-    
+
     const [offerCheck] = await pool.query(`
-      SELECT id, title, deadline, DATEDIFF(CURDATE(), deadline) as days_since_expiry FROM offers 
+      SELECT id, title, deadline, DATEDIFF(CURDATE(), deadline) as days_since_expiry FROM offers
       ${whereClause}
     `, params);
-    
+
     if (offerCheck.length === 0) {
       return res.status(404).json({ error: 'Offer not found, not expired, or not authorized' });
     }
-    
+
     const offer = offerCheck[0];
-    
+
     // Check if offer is within the 2-week archive window (14 days)
     if (offer.days_since_expiry > 14) {
-      return res.status(400).json({ 
-        error: 'Archive window closed', 
-        message: 'This offer expired more than 2 weeks ago and can no longer be archived.' 
+      return res.status(400).json({
+        error: 'Archive window closed',
+        message: 'This offer expired more than 2 weeks ago and can no longer be archived.'
       });
     }
-    
+
     // Get all non-archived applications for this offer
     const [applications] = await pool.query(`
       SELECT * FROM applications WHERE offer_id = ? AND archived_at IS NULL
     `, [offerId]);
-    
+
     if (applications.length === 0) {
       return res.status(404).json({ error: 'No applications found for this offer' });
     }
-    
+
     // Create a zip file with all applications
     const JSZip = require('jszip');
     const zip = new JSZip();
-    const fs = require('fs');
-    
+
     for (const app of applications) {
       // Create folder structure: OfferTitle/CandidateName/
       const folderName = `${offer.title.replace(/[^a-zA-Z0-9]/g, '_')}/${app.full_name.replace(/[^a-zA-Z0-9]/g, '_')}`;
-      
+
       // Add each document if it exists
       const documents = [
         { filename: app.cv_filename, filepath: app.cv_filepath, type: 'CV' },
@@ -1373,7 +1419,7 @@ app.post('/applications/archive/:offerId', auth, requireRole(['comite_ajout', 'c
         { filename: app.liste_references_filename, filepath: app.liste_references_filepath, type: 'Liste_References' },
         { filename: app.offre_financiere_filename, filepath: app.offre_financiere_filepath, type: 'Offre_Financiere' }
       ];
-      
+
       for (const doc of documents) {
         if (doc.filename && doc.filepath && fs.existsSync(doc.filepath)) {
           try {
@@ -1386,7 +1432,7 @@ app.post('/applications/archive/:offerId', auth, requireRole(['comite_ajout', 'c
           }
         }
       }
-      
+
       // Add a summary text file for each candidate
       const summaryText = `
 Candidate Information:
@@ -1401,31 +1447,31 @@ Candidate Information:
 `;
       zip.file(`${folderName}/candidate_info.txt`, summaryText);
     }
-    
+
     // Generate the zip file
     const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' });
-    
+
     // Create a unique filename
     const archiveFilename = `archived_applications_${offer.title.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.zip`;
     const archivePath = `./archives/${archiveFilename}`;
-    
+
     // Ensure archives directory exists
     if (!fs.existsSync('./archives')) {
       fs.mkdirSync('./archives', { recursive: true });
     }
-    
+
     // Save the zip file
     fs.writeFileSync(archivePath, zipBuffer);
-    
+
     // Log the action (download only, no actual archiving)
     logAction(`${req.user.name} (${req.user.email}) downloaded ${applications.length} applications for offer "${offer.title}"`);
-    
-    res.json({ 
+
+    res.json({
       message: `Successfully downloaded ${applications.length} applications for offer "${offer.title}"`,
       archiveFile: archiveFilename,
       applicationsCount: applications.length
     });
-    
+
   } catch (err) {
     console.error('Error archiving applications:', err);
     res.status(500).json({ error: 'Failed to archive applications' });
@@ -1437,22 +1483,20 @@ app.get('/applications/archive/:filename', auth, requireRole(['comite_ajout', 'c
   try {
     const { filename } = req.params;
     const filePath = `./archives/${filename}`;
-    
-    if (!require('fs').existsSync(filePath)) {
+
+    if (!fs.existsSync(filePath)) {
       return res.status(404).json({ error: 'Archive file not found' });
     }
-    
+
     res.setHeader('Content-Type', 'application/zip');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.sendFile(require('path').resolve(filePath));
-    
+    res.sendFile(path.resolve(filePath));
+
   } catch (err) {
     console.error('Error downloading archive:', err);
     res.status(500).json({ error: 'Failed to download archive' });
   }
 });
-
-// Download documents for a specific application
 
 // Download documents for a specific application
 app.get('/applications/:id/:documentType', auth, requireRole(['comite_ajout', 'comite_ouverture']), async (req, res) => {
@@ -1509,34 +1553,41 @@ async function checkExpiredOffers() {
 
     // Check for offers expiring tomorrow (1 day warning) - haven't been notified for 1-day warning
     const [expiringTomorrowOffers] = await pool.query(`
-      SELECT o.*, u.name as hr_name, u.email as hr_email 
-      FROM offers o 
-      JOIN users u ON o.created_by = u.id 
+      SELECT o.*, u.name as hr_name, u.email as hr_email
+      FROM offers o
+      JOIN users u ON o.created_by = u.id
       WHERE o.deadline = ? AND (o.one_day_notified IS NULL OR o.one_day_notified = FALSE)
     `, [tomorrowStr]);
 
     for (const offer of expiringTomorrowOffers) {
       try {
         // Send 1-day expiration warning notifications
-        const notificationEmails = offer.notification_emails ? JSON.parse(offer.notification_emails) : [];
-        
+        let notificationEmails = [];
+        if (offer.notification_emails) {
+          try {
+            notificationEmails = JSON.parse(offer.notification_emails);
+          } catch (e) {
+            console.error('Error parsing notification emails for offer', offer.id, ':', e.message);
+          }
+        }
+
         // Add HR creator email to the notification list if not already included
         if (offer.hr_email && !notificationEmails.includes(offer.hr_email)) {
           notificationEmails.unshift(offer.hr_email); // Add HR email first
         }
-        
+
         if (notificationEmails.length > 0) {
           for (const email of notificationEmails) {
             try {
               const isHR = email === offer.hr_email;
               const recipientName = isHR ? offer.hr_name : 'Notification Recipient';
-              
+
               await sendEmailWithGraphAPI(
                 email,
                 `Offer Expiring Tomorrow: ${offer.title}`,
                 createUpcomingExpirationNotificationEmail(recipientName, offer.title, offer.deadline, 1)
               );
-              
+
               const recipientType = isHR ? 'HR creator' : 'notification email';
               logAction(`System sent 1-day expiration warning for offer "${offer.title}" to ${email} (${recipientType})`);
             } catch (emailError) {
@@ -1546,9 +1597,9 @@ async function checkExpiredOffers() {
         }
         // Mark as notified for 1-day warning
         await pool.query('UPDATE offers SET one_day_notified = TRUE WHERE id = ?', [offer.id]);
-        
+
         logAction(`System processed 1-day warning for offer "${offer.title}" with ${notificationEmails.length} notification emails`);
-        
+
       } catch (error) {
         console.error(`Error processing 1-day warning for offer ${offer.title}:`, error.message);
       }
@@ -1556,34 +1607,41 @@ async function checkExpiredOffers() {
 
     // Check for offers expiring in 2 days (2 day warning) - haven't been notified for 2-day warning
     const [expiringInTwoDaysOffers] = await pool.query(`
-      SELECT o.*, u.name as hr_name, u.email as hr_email 
-      FROM offers o 
-      JOIN users u ON o.created_by = u.id 
+      SELECT o.*, u.name as hr_name, u.email as hr_email
+      FROM offers o
+      JOIN users u ON o.created_by = u.id
       WHERE o.deadline = ? AND (o.two_day_notified IS NULL OR o.two_day_notified = FALSE)
     `, [twoDaysFromNowStr]);
 
     for (const offer of expiringInTwoDaysOffers) {
       try {
         // Send 2-day expiration warning notifications
-        const notificationEmails = offer.notification_emails ? JSON.parse(offer.notification_emails) : [];
-        
+        let notificationEmails = [];
+        if (offer.notification_emails) {
+          try {
+            notificationEmails = JSON.parse(offer.notification_emails);
+          } catch (e) {
+            console.error('Error parsing notification emails for offer', offer.id, ':', e.message);
+          }
+        }
+
         // Add HR creator email to the notification list if not already included
         if (offer.hr_email && !notificationEmails.includes(offer.hr_email)) {
           notificationEmails.unshift(offer.hr_email); // Add HR email first
         }
-        
+
         if (notificationEmails.length > 0) {
           for (const email of notificationEmails) {
             try {
               const isHR = email === offer.hr_email;
               const recipientName = isHR ? offer.hr_name : 'Notification Recipient';
-              
+
               await sendEmailWithGraphAPI(
                 email,
                 `Offer Expiring in 2 Days: ${offer.title}`,
                 createUpcomingExpirationNotificationEmail(recipientName, offer.title, offer.deadline, 2)
               );
-              
+
               const recipientType = isHR ? 'HR creator' : 'notification email';
               logAction(`System sent 2-day expiration warning for offer "${offer.title}" to ${email} (${recipientType})`);
             } catch (emailError) {
@@ -1593,9 +1651,9 @@ async function checkExpiredOffers() {
         }
         // Mark as notified for 2-day warning
         await pool.query('UPDATE offers SET two_day_notified = TRUE WHERE id = ?', [offer.id]);
-        
+
         logAction(`System processed 2-day warning for offer "${offer.title}" with ${notificationEmails.length} notification emails`);
-        
+
       } catch (error) {
         console.error(`Error processing 2-day warning for offer ${offer.title}:`, error.message);
       }
@@ -1603,35 +1661,42 @@ async function checkExpiredOffers() {
 
     // Check for already expired offers (post-expiration notification)
     const [expiredOffers] = await pool.query(`
-      SELECT o.*, u.name as hr_name, u.email as hr_email 
-      FROM offers o 
-      JOIN users u ON o.created_by = u.id 
+      SELECT o.*, u.name as hr_name, u.email as hr_email
+      FROM offers o
+      JOIN users u ON o.created_by = u.id
       WHERE o.deadline < ? AND (o.deadline_notified IS NULL OR o.deadline_notified = FALSE)
     `, [today]);
 
     for (const offer of expiredOffers) {
       try {
         // Send email notifications using the notification_emails field AND HR creator
-        const notificationEmails = offer.notification_emails ? JSON.parse(offer.notification_emails) : [];
-        
+        let notificationEmails = [];
+        if (offer.notification_emails) {
+          try {
+            notificationEmails = JSON.parse(offer.notification_emails);
+          } catch (e) {
+            console.error('Error parsing notification emails for offer', offer.id, ':', e.message);
+          }
+        }
+
         // Add HR creator email to the notification list if not already included
         if (offer.hr_email && !notificationEmails.includes(offer.hr_email)) {
           notificationEmails.unshift(offer.hr_email); // Add HR email first
         }
-        
+
         if (notificationEmails.length > 0) {
           for (const email of notificationEmails) {
             try {
               // Personalize the email for HR vs other recipients
               const isHR = email === offer.hr_email;
               const recipientName = isHR ? offer.hr_name : 'Notification Recipient';
-              
+
               await sendEmailWithGraphAPI(
                 email,
                 `Offer Expired: ${offer.title}`,
                 createExpirationNotificationEmail(recipientName, offer.title, offer.deadline)
               );
-              
+
               // Log action
               const recipientType = isHR ? 'HR creator' : 'notification email';
               logAction(`System sent expiration notification for offer "${offer.title}" to ${email} (${recipientType})`);
@@ -1645,7 +1710,7 @@ async function checkExpiredOffers() {
 
         // Log action
         logAction(`System processed expired offer "${offer.title}" with ${notificationEmails.length} notification emails`);
-        
+
       } catch (error) {
         console.error(`Error processing expired offer ${offer.title}:`, error.message);
       }
@@ -1659,24 +1724,24 @@ async function checkExpiredOffers() {
 app.post('/test-email', auth, requireRole('admin'), async (req, res) => {
   try {
     const { to, subject, message } = req.body;
-    
+
     if (!to || !subject || !message) {
       return res.status(400).json({ error: 'Missing required fields: to, subject, message' });
     }
-    
+
     const htmlContent = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
           <h2 style="color: #343a40; margin: 0;">Test Email</h2>
         </div>
-        
+
         <div style="padding: 20px; background-color: #ffffff; border: 1px solid #dee2e6; border-radius: 8px;">
           <p style="color: #495057; font-size: 16px;">Hello,</p>
-          
+
           <p style="color: #495057; font-size: 14px;">
             ${message}
           </p>
-          
+
           <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6;">
             <p style="color: #6c757d; font-size: 12px; margin: 0;">
               This is a test email sent via Microsoft Graph API<br>
@@ -1687,12 +1752,12 @@ app.post('/test-email', auth, requireRole('admin'), async (req, res) => {
         </div>
       </div>
     `;
-    
+
     await sendEmailWithGraphAPI(to, subject, htmlContent);
-    
+
     logAction(`${req.user.name} (${req.user.email}) sent test email to ${to}`);
     res.json({ message: 'Test email sent successfully via Microsoft Graph API' });
-    
+
   } catch (err) {
     console.error('Test email error:', err);
     res.status(500).json({ error: 'Failed to send test email: ' + err.message });
